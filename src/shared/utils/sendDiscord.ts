@@ -56,7 +56,7 @@ class SendDiscord {
 
     const fields = {
       EmbedTitle: this.getEmbedTitle(alertId),
-      title: title,
+      title: this.maxLength(title,100),
       userName: alertId,
       field: field
     };
@@ -174,25 +174,12 @@ class SendDiscord {
       
     const webhook =  this.urlWebhookDiscord.get(fields.userName)
 
-    await this.delay(10000);
+    await this.delay(1000);
                
     await axios.post(
-    `https://discord.com/api/webhooks/${webhook}`
-    ,body)
-    .then(res => res)
-    .catch( async e =>{
-      console.log('Falha ao enviar erro para discord');
-      console.log('❌ ERROR',e?.response?.data?.error || '','❌')
-      console.log('❌ EMBED',e?.data?.embeds|| '','❌')
-      console.log('❌ EMBED',e?.response?.data?.embeds || '','❌')
-      
-      await this.delay(10000);
-        
-      return false
-    })
-    //await this.delay(1000);
-    return true
-
+      `https://discord.com/api/webhooks/${webhook}`,
+      body
+    )
 
   }
 

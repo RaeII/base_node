@@ -39,4 +39,6 @@ export const env = {
     JWT_SECRET: process.env.JWT_SECRET,
 
     DISCORD_WEBHOOK: process.env.DISCORD_WEBHOOK,
+
+    LOG_LEVEL: process.env.LOG_LEVEL || "info",
 }

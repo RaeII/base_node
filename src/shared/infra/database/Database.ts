@@ -22,8 +22,7 @@ export default class Database {
                 return await connection.query(sql);
             }
         } catch (error) {
-            console.error('Query error:', error);
-            if (await Database.isInTransaction()) await Database.rollback().catch(console.log);
+            if (await Database.isInTransaction()) await Database.rollback();
             throw error;
         } finally {
             if (!MysqlService.isInTransaction()) await MysqlService.release();

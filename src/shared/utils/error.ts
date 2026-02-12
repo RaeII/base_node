@@ -1,6 +1,8 @@
 import type { Response } from "express";
-import type { ZodSchema } from "zod";
+import { z } from "zod";
 import sendDiscord from "@/shared/utils/sendDiscord";
+import logger from "@/shared/utils/logger";
+import { env } from "@/config";
 
 // ─── AppError ────────────────────────────────────────────────────
 
@@ -67,7 +69,7 @@ export function throwInternal(message: string, statusCode = 500): never {
  * Se inválido, lança `AppError` com `isUserError = true` e issues formatados.
  * Retorna os dados tipados em caso de sucesso.
  */
-export function parseSchema<T>(schema: ZodSchema<T>, data: unknown): T {
+export function parseSchema<T>(schema: z.ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data);
 
   if (!result.success) {
@@ -93,6 +95,7 @@ const GENERIC_MESSAGE = "Ocorreu um erro interno";
  *   responde com mensagem genérica.
  */
 export function handleError(error: unknown, res: Response): Response {
+
   // ── AppError conhecido ──
   if (error instanceof AppError) {
     if (error.isUserError) {
@@ -124,14 +127,24 @@ export function handleError(error: unknown, res: Response): Response {
 // ─── Helpers internos ────────────────────────────────────────────
 
 function logAndNotify(message: string, error: unknown): void {
-  console.error(`[AppError] ${message}`);
-  if (error instanceof Error && error.stack) console.error(error.stack);
+  const meta: Record<string, unknown> = {};
+
+  if (error instanceof Error) {
+    // Em dev mostra stack no console; em prod só vai pro arquivo
+    if (!env.isProduction) meta.stack = error.stack;
+  } else {
+    meta.raw = String(error);
+  }
+
+  logger.error(message, meta);
 
   // Fire-and-forget — não bloqueia a resposta
   sendDiscord
     .sendErrorAlert(message, error)
     .catch((discordErr) => {
-      console.error("[AppError] Falha ao notificar Discord:", discordErr);
+      logger.warn("Falha ao notificar Discord", {
+        error: discordErr instanceof Error ? discordErr.message : String(discordErr),
+      });
     });
 }
 

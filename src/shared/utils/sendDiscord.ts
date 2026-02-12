@@ -1,6 +1,6 @@
 import axios from "axios";
-import * as moment from 'moment-timezone';
-import { env } from "../config";
+import { env } from "@/config";
+import { getDateTimeBr } from "./getDateTimeBr";
 
 class SendDiscord {
 
@@ -8,7 +8,7 @@ class SendDiscord {
 
   constructor(){
     this.urlWebhookDiscord = new Map()
-    .set('KAFKA_ALERT', env.URL_WEBHOOK_KAFKA_ALERT)
+    .set('APP_ERROR', env.DISCORD_WEBHOOK)
   }
 
   maxLength = (str:string,length = 1020 ) => {
@@ -21,22 +21,7 @@ class SendDiscord {
     return str
   }
 
-  getDateTimeBrasilia = async (date = "") => {
 
-    // Define a data e hora em UTC
-    const utcDateTime = date ? new Date(date) : new Date()
-
-    // Define o fuso horário de Brasília
-    const brasiliaTimeZone = 'America/Sao_Paulo';
-
-    // Cria um objeto Moment.js com a data e hora em UTC
-    const momentUtc = moment.utc(utcDateTime);
-
-    // Converte para o horário de Brasília
-    const momentBrasilia = momentUtc.tz(brasiliaTimeZone);
-
-    return momentBrasilia
-  }
 
   field = async (message: string) => {
     const field = [
@@ -80,36 +65,34 @@ class SendDiscord {
   }
 
   /**
+   * Envia um erro detalhado para o Discord.
+   * Extrai stack, error_request, message, etc. do objeto de erro.
+   */
+  sendErrorAlert = async (title: string, error: any) => {
+    const field = await this.fieldLegacy(error);
+
+    const fields = {
+      EmbedTitle: this.getEmbedTitle('APP_ERROR'),
+      title: title,
+      userName: 'APP_ERROR',
+      field: field
+    };
+
+    await this.sendDiscord(fields);
+  }
+
+  /**
    * Retorna o título do embed baseado no alert_id
    */
   private getEmbedTitle = (alertId: string): string => {
     const embedTitles: { [key: string]: string } = {
-      'KAFKA_ALERT': '☠️ KAFKA ALERT ☠️'
+      'APP_ERROR': '🚨 APP ERROR 🚨'
     };
 
     return embedTitles[alertId] || `🔔 ${alertId.toUpperCase()} 🔔`;
   }
 
-  /**
-   * @deprecated Use sendAlert() para novos alertas
-   */
-  kafkaError = async (e:any) => {
-   
-    const fields = {
-      EmbedTitle:'☠️ KAFKA ☠️',
-      title:e?.title || 'Error',
-      userName:'kafka_boring',
-      field:{}
-    }
-    
-    fields.field = await this.fieldLegacy(e)
 
-    await this.sendDiscord(fields)
-  }
-
-  /**
-   * @deprecated Mantido para compatibilidade com código legado
-   */
   private fieldLegacy = async (e:any) => {
 
     const field = []
@@ -117,11 +100,6 @@ class SendDiscord {
     if((e?.error_message || false)) field.push({                     
       name: "**ERROR MESSAGE**",
       value: this.maxLength(e.error_message) 
-    })
-
-    if((e?.discordInfo || false)) field.push({                     
-      name: "**DISCORD INFO**",
-      value: this.maxLength(e.discordInfo) 
     })
 
     if(e?.details || e?.data?.details || false) field.push({
@@ -139,11 +117,6 @@ class SendDiscord {
       value:this.maxLength(e.msg)
     })
 
-    if(e?.response?.data?.message || false) field.push({
-      name: "**ALEMAO API**",
-      value: this.maxLength(e.response.data.message) 
-    })
-
     if((e?.error_response || false) && typeof e.error_response === "string") field.push({
       name: "**ERROR REQUEST**",
       value: this.maxLength(e.error_response)
@@ -158,17 +131,7 @@ class SendDiscord {
         name: "**STACK**",
         value: this.maxLength(e.stack)
     })
-    if(e?.file || false) field.push({
-      name: "**FILE**",
-      value: e.file,
-      inline: true
-    })
-    if(e?.line || false) field.push({
-      name: "**LINE**",
-      value: e.line,
-      inline: true
-    })
-
+ 
     return field
 
   }
@@ -176,12 +139,11 @@ class SendDiscord {
   
   sendDiscord = async (fields:any) =>{
 
-    const dateNow = await this.getDateTimeBrasilia()
+    const dateNow = await getDateTimeBr()
     
     const body =
     {
-      content : `━━━━━━━━━━━━━━━━━━━━━━━━━ ** ${fields.EmbedTitle} ** ━━━━━━━━━━━━━━━━━━━━━━━━━\n`+
-                "<@986261387271614475> <@198580668102475779>",
+      content : `━━━━━━━** ${fields.EmbedTitle} **━━━━━━━\n`,
       embeds: [
         {
           timestamp:  new Date().toISOString(),
@@ -224,7 +186,6 @@ class SendDiscord {
       console.log('❌ EMBED',e?.data?.embeds|| '','❌')
       console.log('❌ EMBED',e?.response?.data?.embeds || '','❌')
       
-      await this.sendDiscordErroGuarantee(`Não foi possivel enviar error para o Discord cron youtube (**${fields.userName}**)`,webhook)
       await this.delay(10000);
         
       return false
@@ -239,23 +200,6 @@ class SendDiscord {
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
-  }
-
-  sendDiscordErroGuarantee = async (message: string,webhook: string | undefined) => {
-    const date  = new Date
-    const hr  = `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
-    const now  = `${date.getFullYear()}-${("0" + (date.getMonth() + 1)).slice(-2)}-${("0" + date.getDate()).slice(-2)}` 
-
-    await axios.post(
-      `https://discord.com/api/webhooks/${env.URL_WEBHOOK_ERROR_SEND_DISCORD_I}`
-      ,{
-        content : `<@986261387271614475> ${message}`
-      })
-      .then(res => res)
-      .catch(e => {
-        console.log('❌ Falhas ❌', now, hr)
-  
-      })
   }
 
 }

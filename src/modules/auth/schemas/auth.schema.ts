@@ -56,3 +56,43 @@ export const loginSchema = z
 
 export type LoginSchema = z.infer<typeof loginSchema>;
 
+// ─── Schemas de Body (documentação Swagger) ─────────────────────
+
+/** Schema de body para geração de token JWT */
+export const createJwtBodySchema = z.object({
+  name: z.string(),
+});
+
+// ─── Schemas de Resposta (documentação Swagger) ─────────────────
+
+/** Schema de resposta de sucesso ao gerar JWT (200) */
+export const createJwtResponseSchema = z.object({
+  accessToken: z.string(),
+  expiresIn: z.number(),
+});
+
+/** Schema de resposta de erro genérico (400) */
+export const errorResponseSchema = z.object({
+  message: z.string(),
+});
+
+/** Schema de resposta de sucesso ao fazer login (200) */
+export const loginResponseSchema = z.object({
+  data: z.object({
+    id: z.number(),
+    username: z.string(),
+    email: z.string().nullable(),
+    is_active: z.boolean(),
+    is_admin: z.boolean(),
+  }),
+  expiresIn: z.number(),
+});
+
+/** Schema de resposta de erro de validação no login (400) */
+export const loginErrorResponseSchema = z.object({
+  message: z.string(),
+  issues: z.array(z.object({
+    path: z.string(),
+    message: z.string(),
+  })).optional(),
+});

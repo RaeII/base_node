@@ -46,7 +46,5 @@ export function setupSwagger(
     })
   );
 
-  console.log(`  📖 Swagger UI disponível em: ${docsPath}`);
-  console.log(`  📄 Swagger JSON disponível em: ${docsPath}-json`);
 }
 

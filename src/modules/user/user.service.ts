@@ -1,6 +1,7 @@
 import * as bcrypt from "bcrypt";
-import UserDatabase, { DbUserRow } from "@/modules/user/user.database";
-import type { AuthenticateUserInput, CreateUserInput, PublicUser } from "@/types";
+import UserDatabase from "@/modules/user/user.database";
+import type { AuthenticateUserInput, CreateUserInput, DbUserRow, PublicUser } from "./schema/user.schema";
+import { throwUser, throwInternal } from "@/shared/utils/error";
 
 
 function toPublicUser(row: DbUserRow): PublicUser {
@@ -33,24 +34,18 @@ export default class UserService {
 
     const row = await this.userDb.findByUsernameOrEmail(identifier);
 
-    if(!row){
-      const err: any = new Error("Credenciais inválidas");
-      err.status = 401;
-      throw err;
+    if (!row) {
+      throwUser("Credenciais inválidas", 401);
     }
 
     const ok = bcrypt.compare(password, row.password);
-    if (!row || !row.password || !ok) {
-      const err: any = new Error("Credenciais inválidas");
-      err.status = 401;
-      throw err;
+    if (!row.password || !ok) {
+      throwUser("Credenciais inválidas", 401);
     }
 
     const isActive = Number(row.is_active) === 1;
     if (!isActive) {
-      const err: any = new Error("Usuário não encontrado");
-      err.status = 403;
-      throw err;
+      throwUser("Usuário não encontrado", 403);
     }
 
     await this.userDb.updateLastLoginAt(row.id);
@@ -61,17 +56,13 @@ export default class UserService {
   async createUser(input: CreateUserInput): Promise<PublicUser> {
     const existingByUsername = await this.userDb.findByUsername(input.username);
     if (existingByUsername) {
-      const err: any = new Error("Username já está em uso");
-      err.status = 409;
-      throw err;
+      throwUser("Username já está em uso", 409);
     }
 
     if (input.email) {
       const existingByEmail = await this.userDb.findByEmail(input.email);
       if (existingByEmail) {
-        const err: any = new Error("E-mail já está em uso");
-        err.status = 409;
-        throw err;
+        throwUser("E-mail já está em uso", 409);
       }
     }
 
@@ -81,7 +72,7 @@ export default class UserService {
 
     const created = await this.userDb.createUser({
       username: input.username,
-      email: input.email,
+      email: input.email ?? null,
       passwordHash,
       isActive: input.is_active ? true : false,
       isAdmin: input.is_admin ? true : false,
@@ -89,10 +80,9 @@ export default class UserService {
 
     const row = await this.userDb.findById(created.id);
     if (!row) {
-      throw new Error("Falha ao criar usuário");
+      throwInternal("Falha ao criar usuário");
     }
 
     return toPublicUser(row);
   }
 }
-

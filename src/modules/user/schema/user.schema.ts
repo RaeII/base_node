@@ -29,9 +29,57 @@ export const createUserSchema = z
   })
   .strict();
 
-export type CreateUserSchema = z.infer<typeof createUserSchema>;
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+
+export const authenticateUserSchema = z.object({
+  identifier: z.string(),
+  password: z.string(),
+});
+
+export type AuthenticateUserInput = z.infer<typeof authenticateUserSchema>;
+
+export const publicUserSchema = z.object({
+  id: z.number(),
+  username: z.string(),
+  email: z.string().nullable(),
+  is_active: z.boolean(),
+  is_admin: z.boolean(),
+  last_login_at: z.date().nullable(),
+  created_at: z.date(),
+  updated_at: z.date().nullable(),
+});
+
+export type PublicUser = z.infer<typeof publicUserSchema>;
+
+
+// ─── Schemas de Banco de Dados ──────────────────────────────────
+
+export const dbUserRowSchema = z.object({
+  id: z.number(),
+  username: z.string(),
+  email: z.string().nullable(),
+  password: z.string(),
+  is_active: z.number().nullable(),
+  is_admin: z.number().nullable(),
+  last_login_at: z.date().nullable(),
+  created_at: z.date(),
+  updated_at: z.date().nullable(),
+});
+
+export type DbUserRow = z.infer<typeof dbUserRowSchema>;
+
+export const createUserDbInputSchema = z.object({
+  username: z.string(),
+  email: z.string().nullable(),
+  passwordHash: z.string(),
+  isActive: z.boolean(),
+  isAdmin: z.boolean(),
+});
+
+export type CreateUserDbInput = z.infer<typeof createUserDbInputSchema>;
 
 // ─── Schemas de Resposta (documentação Swagger) ─────────────────
+
 
 /** Schema de resposta de sucesso ao criar usuário (201) */
 export const createUserResponseSchema = z.object({

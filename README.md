@@ -23,7 +23,7 @@ A ideia é simples: ao invés de configurar tudo do zero a cada novo projeto, vo
 
 | Tecnologia | Versão | Uso |
 |---|---|---|
-| Node.js | 16+ | Runtime |
+| Node.js | 20+ | Runtime |
 | TypeScript | ^5.3 | Linguagem |
 | Express | ^5.2 | Framework HTTP |
 | Zod | ^4.3 | Validação de schemas |
@@ -37,21 +37,42 @@ A ideia é simples: ao invés de configurar tudo do zero a cada novo projeto, vo
 
 ## 🏁 Início Rápido
 
+> **Pré-requisito:** Ter o [GitHub CLI](https://cli.github.com/) instalado e autenticado (`gh auth login`).
+
 ```bash
-# Clonar o repositório
-git clone <repo-url> meu-projeto
+# 1. Clonar o template em uma nova pasta
+git clone <repo-template-url> meu-projeto
 cd meu-projeto
 
-# Instalar dependências
+# 2. Remover o vínculo com o repositório original
+rm -rf .git
+
+# 3. Inicializar um novo repositório git
+git init
+git add .
+git commit -m "feat: init"
+
+# 4. Criar o repositório no GitHub e subir automaticamente
+gh repo create meu-projeto --private --source=. --push
+
+# 5. Instalar dependências
 yarn install
 
-# Configurar variáveis de ambiente
+# 6. Configurar variáveis de ambiente
 cp .env.example .env
 
-# Rodar em desenvolvimento
+# 7. Rodar em desenvolvimento
 yarn dev
+```
 
-# Build para produção
+> 💡 **Sobre o `gh repo create`:**
+> - `--private` → cria o repositório como privado (troque por `--public` se preferir público)
+> - `--source=.` → usa o diretório atual como código fonte
+> - `--push` → faz o push do commit inicial automaticamente
+
+Para build de produção:
+
+```bash
 yarn build
 yarn start
 ```
@@ -344,15 +365,15 @@ PORT=3003
 # Banco de dados
 DB_HOSTNAME=localhost
 DB_PORT=3306
-DB_USERNAME=root
+DB_USERNAME=
 DB_PASSWORD=
 DB_NAME=meu_banco
 
 # Autenticação
+AUTHORIZATION=1
 JWT_SECRET=minha_chave_secreta
 
 # Integração (opcional)
-AUTHORIZATION=
-URL_WEBHOOK_KAFKA_ALERT=
-URL_WEBHOOK_ERROR_SEND_DISCORD_I=
+DISCORD_WEBHOOK=
 ```
+

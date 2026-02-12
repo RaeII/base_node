@@ -1,24 +1,5 @@
 import Database from "@/shared/infra/database/Database";
-
-export type DbUserRow = {
-  id: number;
-  username: string;
-  email: string | null;
-  password: string;
-  is_active: number | null;
-  is_admin: number | null;
-  last_login_at: Date | null;
-  created_at: Date;
-  updated_at: Date | null;
-};
-
-export type CreateUserDbInput = {
-  username: string;
-  email: string | null;
-  passwordHash: string;
-  isActive: boolean;
-  isAdmin: boolean;
-};
+import type { CreateUserDbInput, DbUserRow } from "./schema/user.schema";
 
 export default class UserDatabase extends Database {
   async findByUsername(username: string): Promise<DbUserRow | null> {

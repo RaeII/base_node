@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import express, { Application } from "express";
 import { env } from "@/config";
 import loaders from "@/shared/loaders";
@@ -21,7 +20,7 @@ async function startServer() {
 	// Configura o Swagger UI com documentação gerada automaticamente
 	setupSwagger(app, "/api", controllers, {
 		title: "Back Node API",
-		description: "Documentação automática da API gerada a partir dos controllers decorados.",
+		description: "Documentação",
 		version: "1.0.0",
 		servers: [
 			{

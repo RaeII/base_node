@@ -11,6 +11,8 @@ import {
 import jwtMiddleware from "@/shared/middlewares/jwt.middleware";
 import adminMiddleware from "@/shared/middlewares/admin.middleware";
 import { parseSchema, handleError } from "@/shared/utils/error";
+import MysqlService from '@/shared/infra/database/MySQLService';
+
 
 @Route("/user")
 @ApiTags("Usuários")
@@ -35,6 +37,8 @@ class UserController extends Controller {
     try {
       const data = parseSchema(createUserSchema, req.body);
 
+      await MysqlService.beginTransaction();
+
       const created = await this.userService.createUser({
         username: data.username,
         email: data.email,
@@ -43,10 +47,13 @@ class UserController extends Controller {
         is_admin: data.is_admin,
       });
 
+      await MysqlService.commit();
+
       return res.status(201).json({
         data: created,
       });
     } catch (err) {
+      await MysqlService.rollback();
       return handleError(err, res);
     }
   }

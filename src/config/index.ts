@@ -35,7 +35,7 @@ export const env = {
 
     isProduction: process.env.NODE_ENV === "production",
 
-    AUTHORIZATION: process.env.AUTHORIZATION,
+    AUTHORIZATION: Number(process?.env?.AUTHORIZATION || 0),
     JWT_SECRET: process.env.JWT_SECRET,
 
     DISCORD_WEBHOOK: process.env.DISCORD_WEBHOOK,

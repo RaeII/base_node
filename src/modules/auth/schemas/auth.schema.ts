@@ -22,9 +22,8 @@ export const loginSchema = z
     ),
     email: optionalTrimmedString().pipe(
       z
-        .string()
-        .max(45, "email deve ter no máximo 45 caracteres")
         .email("email inválido")
+        .max(45, "email deve ter no máximo 45 caracteres")
         .optional()
     ),
     username: optionalTrimmedString().pipe(
@@ -47,7 +46,7 @@ export const loginSchema = z
 
     if (provided.length !== 1) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["login"],
         message: "Informe exatamente um identificador: login, email ou username",
       });

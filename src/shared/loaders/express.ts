@@ -9,7 +9,11 @@ import {
 import cors from "cors";
 import { connectionMiddleware } from "@/shared/utils/async_local_storage";
 
-export default (app: Application) => {
+/**
+ * Registra os middlewares que devem ser executados ANTES das rotas.
+ * (json parser, cors, async local storage, etc.)
+ */
+export function loadPreRouteMiddlewares(app: Application) {
   app.use(json({ limit: '10mb' }));
 
   const options: cors.CorsOptions = {
@@ -24,7 +28,13 @@ export default (app: Application) => {
 
   // Inicializa o contexto do AsyncLocalStorage por request (necessário para o MySQLService.getConnection)
   app.use(connectionMiddleware());
+}
 
+/**
+ * Registra os handlers de erro que devem ser executados DEPOIS das rotas.
+ * (404, error handlers, etc.)
+ */
+export function loadPostRouteMiddlewares(app: Application) {
   app.use((req: Request, res: Response, next: NextFunction) => {
     const err: any = new Error("Not Found");
     err["status"] = 404;
@@ -50,4 +60,10 @@ export default (app: Application) => {
       },
     });
   }) as ErrorRequestHandler);
+}
+
+// Mantém export default para retrocompatibilidade (registra tudo de uma vez)
+export default (app: Application) => {
+  loadPreRouteMiddlewares(app);
+  loadPostRouteMiddlewares(app);
 };

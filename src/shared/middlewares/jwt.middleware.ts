@@ -5,7 +5,7 @@ import { env } from "@/config";
 class JwtMiddleware {
   validJWTNeeded(req: Request, res: Response, next: NextFunction): void {
     if(env.AUTHORIZATION) {
-      const token = req.cookies['token_access'];
+      const token = req.cookies?.['token_access'];
       if (!token) {
         try {
 

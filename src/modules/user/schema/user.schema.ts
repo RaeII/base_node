@@ -17,9 +17,8 @@ export const createUserSchema = z
       .string()
       .trim()
       .max(45, "email deve ter no máximo 45 caracteres")
-      .pipe(z.email({ error: "email inválido" }))
-      .optional()
-      .or(z.literal("").transform(() => undefined)),
+      .email("email inválido")
+      .optional(),
     password: z
       .string({ error: "password é obrigatório" })
       .min(6, "password deve ter no mínimo 6 caracteres")

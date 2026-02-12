@@ -1,6 +1,6 @@
 import express, { Application } from "express";
 import { env } from "@/config";
-import loaders from "@/shared/loaders";
+import { initializePreRouteLoaders, initializePostRouteLoaders } from "@/shared/loaders";
 import { registerControllers } from "@/shared/core/registerControllers";
 import { setupSwagger } from "@/shared/core/swagger/swagger.setup";
 import AuthController from "@/modules/auth/auth.controller";
@@ -14,10 +14,13 @@ const controllers = [
 async function startServer() {
 	const app: Application = express();
 
-	// Registra os controllers decorados automaticamente
+	// 1. Middlewares que devem rodar ANTES das rotas (json parser, cors, etc.)
+	await initializePreRouteLoaders(app);
+
+	// 2. Registra os controllers decorados automaticamente
 	registerControllers(app, "/api", controllers);
 
-	// Configura o Swagger UI com documentação gerada automaticamente
+	// 3. Configura o Swagger UI com documentação gerada automaticamente
 	setupSwagger(app, "/api", controllers, {
 		title: "Back Node API",
 		description: "Documentação",
@@ -30,7 +33,9 @@ async function startServer() {
 		],
 	});
 
-	await loaders(app);
+	// 4. Handlers de erro DEPOIS das rotas (404, error handlers)
+	initializePostRouteLoaders(app);
+
 	app.listen(env.PORT, () => {
 		console.log(`
 			##############################

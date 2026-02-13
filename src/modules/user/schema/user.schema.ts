@@ -77,8 +77,52 @@ export const createUserDbInputSchema = z.object({
 
 export type CreateUserDbInput = z.infer<typeof createUserDbInputSchema>;
 
+// ─── Schema de Atualização ──────────────────────────────────────
+
+/**
+ * Schema de validação para atualização de usuário.
+ * Todos os campos são opcionais — atualiza apenas o que for enviado.
+ */
+export const updateUserSchema = z
+  .object({
+    username: z
+      .string()
+      .trim()
+      .min(3, "username deve ter no mínimo 3 caracteres")
+      .max(45, "username deve ter no máximo 45 caracteres")
+      .optional(),
+    email: z
+      .string()
+      .trim()
+      .max(45, "email deve ter no máximo 45 caracteres")
+      .email("email inválido")
+      .optional(),
+    password: z
+      .string()
+      .min(6, "password deve ter no mínimo 6 caracteres")
+      .max(255, "password deve ter no máximo 255 caracteres")
+      .optional(),
+    is_active: z.boolean().optional(),
+    is_admin: z.boolean().optional(),
+  })
+  .strict();
+
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
+export interface UpdateUserDbInput {
+  username?: string;
+  email?: string | null;
+  passwordHash?: string;
+  isActive?: boolean;
+  isAdmin?: boolean;
+}
+
 // ─── Schemas de Resposta (documentação Swagger) ─────────────────
 
+/** Schema de resposta com dados públicos do usuário */
+export const userResponseSchema = z.object({
+  data: publicUserSchema,
+});
 
 /** Schema de resposta de sucesso ao criar usuário (201) */
 export const createUserResponseSchema = z.object({
@@ -89,6 +133,11 @@ export const createUserResponseSchema = z.object({
     is_active: z.boolean(),
     is_admin: z.boolean(),
   }),
+});
+
+/** Schema de resposta com lista de usuários */
+export const usersListResponseSchema = z.object({
+  data: z.array(publicUserSchema),
 });
 
 /** Schema de resposta de erro de validação (400) */
@@ -102,4 +151,9 @@ export const validationErrorResponseSchema = z.object({
       })
     )
     .optional(),
+});
+
+/** Schema de resposta de mensagem simples */
+export const messageResponseSchema = z.object({
+  message: z.string(),
 });

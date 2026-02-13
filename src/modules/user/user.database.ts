@@ -1,7 +1,12 @@
 import Database from "@/shared/infra/database/Database";
-import type { CreateUserDbInput, DbUserRow } from "./schema/user.schema";
+import type { CreateUserDbInput, DbUserRow, UpdateUserDbInput } from "./schema/user.schema";
 
 export default class UserDatabase extends Database {
+  async findAll(): Promise<DbUserRow[]> {
+    const [rows] = await this.query("SELECT * FROM user WHERE is_active = 1 ORDER BY id ASC");
+    return (rows as DbUserRow[]) || [];
+  }
+
   async findByUsername(username: string): Promise<DbUserRow | null> {
     const [rows] = await this.query("SELECT * FROM user WHERE username = ? LIMIT 1", [username]);
     const row = (rows as DbUserRow[])?.[0];
@@ -19,6 +24,12 @@ export default class UserDatabase extends Database {
       "SELECT * FROM user WHERE username = ? OR email = ? LIMIT 1",
       [identifier, identifier]
     );
+    const row = (rows as DbUserRow[])?.[0];
+    return row || null;
+  }
+
+  async findById(id: number): Promise<DbUserRow | null> {
+    const [rows] = await this.query("SELECT * FROM user WHERE id = ? LIMIT 1", [id]);
     const row = (rows as DbUserRow[])?.[0];
     return row || null;
   }
@@ -44,10 +55,40 @@ export default class UserDatabase extends Database {
     return { id: Number(insertId) };
   }
 
-  async findById(id: number): Promise<DbUserRow | null> {
-    const [rows] = await this.query("SELECT * FROM user WHERE id = ? LIMIT 1", [id]);
-    const row = (rows as DbUserRow[])?.[0];
-    return row || null;
+  async updateUser(id: number, input: UpdateUserDbInput): Promise<void> {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    if (input.username !== undefined) {
+      fields.push("username = ?");
+      values.push(input.username);
+    }
+    if (input.email !== undefined) {
+      fields.push("email = ?");
+      values.push(input.email);
+    }
+    if (input.passwordHash !== undefined) {
+      fields.push("password = ?");
+      values.push(input.passwordHash);
+    }
+    if (input.isActive !== undefined) {
+      fields.push("is_active = ?");
+      values.push(input.isActive ? 1 : 0);
+    }
+    if (input.isAdmin !== undefined) {
+      fields.push("is_admin = ?");
+      values.push(input.isAdmin ? 1 : 0);
+    }
+
+    if (fields.length === 0) return;
+
+    values.push(id);
+    const sql = `UPDATE user SET ${fields.join(", ")} WHERE id = ? LIMIT 1`;
+    await this.query(sql, values);
+  }
+
+  async deactivateUser(id: number): Promise<void> {
+    await this.query("UPDATE user SET is_active = 0 WHERE id = ? LIMIT 1", [id]);
   }
 
   async updateLastLoginAt(id: number): Promise<void> {

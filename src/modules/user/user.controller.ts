@@ -1,11 +1,15 @@
 import { Request, Response } from "express";
 import Controller from "@/shared/core/Controller";
-import { Controller as Route, Post, Middleware } from "@/shared/core/decorators";
-import { ApiBody, ApiResponse, ApiSummary, ApiTags } from "@/shared/core/decorators/index";
+import { Controller as Route, Get, Post, Put, Delete, Middleware } from "@/shared/core/decorators";
+import { ApiBody, ApiResponse, ApiSummary, ApiTags, ApiParam } from "@/shared/core/decorators/index";
 import UserService from "@/modules/user/user.service";
 import {
   createUserSchema,
   createUserResponseSchema,
+  updateUserSchema,
+  userResponseSchema,
+  usersListResponseSchema,
+  messageResponseSchema,
   validationErrorResponseSchema,
 } from "@/modules/user/schema/user.schema";
 import jwtMiddleware from "@/shared/middlewares/jwt.middleware";
@@ -22,6 +26,47 @@ class UserController extends Controller {
   constructor() {
     super();
     this.userService = new UserService();
+  }
+
+  @Get("/")
+  @Middleware(
+    jwtMiddleware.validJWTNeeded.bind(jwtMiddleware),
+    adminMiddleware.adminOnly.bind(adminMiddleware)
+  )
+  @ApiSummary("Listar usuários", "Retorna todos os usuários ativos. Requer autenticação JWT e permissão de administrador.")
+  @ApiResponse(200, "Lista de usuários", usersListResponseSchema)
+  async findAll(req: Request, res: Response) {
+    try {
+      const users = await this.userService.findAll();
+
+      return res.status(200).json({
+        data: users,
+      });
+    } catch (err) {
+      return handleError(err, res);
+    }
+  }
+
+  @Get("/:id")
+  @Middleware(
+    jwtMiddleware.validJWTNeeded.bind(jwtMiddleware),
+    adminMiddleware.adminOnly.bind(adminMiddleware)
+  )
+  @ApiSummary("Buscar usuário por ID", "Retorna os dados de um usuário específico. Requer autenticação JWT e permissão de administrador.")
+  @ApiParam("id", { description: "ID do usuário", type: "integer" })
+  @ApiResponse(200, "Dados do usuário", userResponseSchema)
+  @ApiResponse(404, "Usuário não encontrado", messageResponseSchema)
+  async findById(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      const user = await this.userService.findById(id);
+
+      return res.status(200).json({
+        data: user,
+      });
+    } catch (err) {
+      return handleError(err, res);
+    }
   }
 
   @Post("/")
@@ -51,6 +96,65 @@ class UserController extends Controller {
 
       return res.status(201).json({
         data: created,
+      });
+    } catch (err) {
+      await MysqlService.rollback();
+      return handleError(err, res);
+    }
+  }
+
+  @Put("/:id")
+  @Middleware(
+    jwtMiddleware.validJWTNeeded.bind(jwtMiddleware),
+    adminMiddleware.adminOnly.bind(adminMiddleware)
+  )
+  @ApiSummary("Atualizar usuário", "Atualiza os dados de um usuário existente. Requer autenticação JWT e permissão de administrador.")
+  @ApiParam("id", { description: "ID do usuário", type: "integer" })
+  @ApiBody(updateUserSchema, "Dados para atualização")
+  @ApiResponse(200, "Usuário atualizado com sucesso", userResponseSchema)
+  @ApiResponse(400, "Dados inválidos", validationErrorResponseSchema)
+  @ApiResponse(404, "Usuário não encontrado", messageResponseSchema)
+  async update(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      const data = parseSchema(updateUserSchema, req.body);
+
+      await MysqlService.beginTransaction();
+
+      const updated = await this.userService.updateUser(id, data);
+
+      await MysqlService.commit();
+
+      return res.status(200).json({
+        data: updated,
+      });
+    } catch (err) {
+      await MysqlService.rollback();
+      return handleError(err, res);
+    }
+  }
+
+  @Delete("/:id")
+  @Middleware(
+    jwtMiddleware.validJWTNeeded.bind(jwtMiddleware),
+    adminMiddleware.adminOnly.bind(adminMiddleware)
+  )
+  @ApiSummary("Deletar usuário", "Desativa um usuário (soft delete). Requer autenticação JWT e permissão de administrador.")
+  @ApiParam("id", { description: "ID do usuário", type: "integer" })
+  @ApiResponse(200, "Usuário desativado com sucesso", messageResponseSchema)
+  @ApiResponse(404, "Usuário não encontrado", messageResponseSchema)
+  async delete(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+
+      await MysqlService.beginTransaction();
+
+      await this.userService.deleteUser(id);
+
+      await MysqlService.commit();
+
+      return res.status(200).json({
+        message: "Usuário desativado com sucesso",
       });
     } catch (err) {
       await MysqlService.rollback();

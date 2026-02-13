@@ -30,7 +30,18 @@ export interface SwaggerConfig {
  */
 function zodToOpenApiSchema(schema: any): Record<string, any> {
   try {
-    const jsonSchema = toJSONSchema(schema) as Record<string, any>;
+    const jsonSchema = toJSONSchema(schema, {
+      target: "openapi-3.0",
+      unrepresentable: "any",
+      override: ({ zodSchema, jsonSchema }) => {
+        // z.date() não é representável diretamente em JSON Schema; no OpenAPI ele deve ser string/date-time.
+        const zodType = (zodSchema as any)?._zod?.def?.type;
+        if (zodType === "date") {
+          (jsonSchema as Record<string, any>).type = "string";
+          (jsonSchema as Record<string, any>).format = "date-time";
+        }
+      },
+    }) as Record<string, any>;
 
     // Remove propriedades que não são compatíveis com OpenAPI 3.0 inline
     delete jsonSchema["$schema"];

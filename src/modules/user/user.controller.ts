@@ -15,6 +15,7 @@ import {
 import jwtMiddleware from "@/shared/middlewares/jwt.middleware";
 import adminMiddleware from "@/shared/middlewares/admin.middleware";
 import { parseSchema, handleError } from "@/shared/utils/error";
+import { paginationMiddleware } from "@/shared/utils/pagination";
 import MysqlService from '@/shared/infra/database/MySQLService';
 
 
@@ -30,18 +31,16 @@ class UserController extends Controller {
 
   @Get("/")
   @Middleware(
+    paginationMiddleware(),
     jwtMiddleware.validJWTNeeded.bind(jwtMiddleware),
     adminMiddleware.adminOnly.bind(adminMiddleware)
   )
-  @ApiSummary("Listar usuários", "Retorna todos os usuários ativos. Requer autenticação JWT e permissão de administrador.")
-  @ApiResponse(200, "Lista de usuários", usersListResponseSchema)
+  @ApiSummary("Listar usuários", "Retorna usuários ativos com paginação. Query params: ?page=1&limit=20 (máx: 100). Requer autenticação JWT e permissão de administrador.")
+  @ApiResponse(200, "Lista paginada de usuários", usersListResponseSchema)
   async findAll(req: Request, res: Response) {
     try {
-      const users = await this.userService.findAll();
-
-      return res.status(200).json({
-        data: users,
-      });
+      const result = await this.userService.findAll();
+      return res.status(200).json(result);
     } catch (err) {
       return handleError(err, res);
     }

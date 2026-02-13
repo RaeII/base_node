@@ -2,6 +2,7 @@ import * as bcrypt from "bcrypt";
 import UserDatabase from "@/modules/user/user.database";
 import type { AuthenticateUserInput, CreateUserInput, DbUserRow, PublicUser, UpdateUserInput } from "./schema/user.schema";
 import { throwUser, throwInternal } from "@/shared/utils/error";
+import { paginatedResponse, type PaginatedResult } from "@/shared/utils/pagination";
 
 
 function toPublicUser(row: DbUserRow): PublicUser {
@@ -25,11 +26,12 @@ export default class UserService {
   }
 
   /**
-   * Retorna todos os usuários ativos.
+   * Retorna usuários ativos com paginação.
+   * Os parâmetros de paginação são resolvidos via AsyncLocalStorage.
    */
-  async findAll(): Promise<PublicUser[]> {
-    const rows = await this.userDb.findAll();
-    return rows.map(toPublicUser);
+  async findAll(): Promise<PaginatedResult<PublicUser>> {
+    const { rows, total } = await this.userDb.findAll();
+    return paginatedResponse(rows.map(toPublicUser), total);
   }
 
   /**

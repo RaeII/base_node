@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createPaginatedSchema } from "@/shared/utils/pagination";
 
 // ─── Schemas de Validação (entrada) ─────────────────────────────
 
@@ -135,10 +136,8 @@ export const createUserResponseSchema = z.object({
   }),
 });
 
-/** Schema de resposta com lista de usuários */
-export const usersListResponseSchema = z.object({
-  data: z.array(publicUserSchema),
-});
+/** Schema de resposta paginada com lista de usuários */
+export const usersListResponseSchema = createPaginatedSchema(publicUserSchema);
 
 /** Schema de resposta de erro de validação (400) */
 export const validationErrorResponseSchema = z.object({

@@ -1,10 +1,32 @@
 import Database from "@/shared/infra/database/Database";
+import { getPagination } from "@/shared/utils/pagination";
 import type { CreateUserDbInput, DbUserRow, UpdateUserDbInput } from "./schema/user.schema";
 
 export default class UserDatabase extends Database {
-  async findAll(): Promise<DbUserRow[]> {
-    const [rows] = await this.query("SELECT * FROM user WHERE is_active = 1 ORDER BY id ASC");
-    return (rows as DbUserRow[]) || [];
+
+  /**
+   * Retorna usuários ativos com paginação em uma única query.
+   * A subquery escalar (não-correlacionada) é executada uma única vez pelo MySQL,
+   * evitando um round-trip extra ao banco.
+   * Os parâmetros limit/offset são obtidos automaticamente via AsyncLocalStorage.
+   */
+  async findAll(): Promise<{ rows: DbUserRow[]; total: number }> {
+    const { limit, offset } = getPagination();
+
+    const [result] = await this.query(
+      `SELECT u.*, (SELECT COUNT(*) FROM user WHERE is_active = 1) AS _total
+       FROM user u
+       WHERE u.is_active = 1
+       ORDER BY u.id ASC
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+
+    const typedRows = (result as Array<DbUserRow & { _total: number }>) || [];
+    const total = Number(typedRows[0]?._total) || 0;
+    const rows = typedRows.map(({ _total, ...row }) => row as unknown as DbUserRow);
+
+    return { rows, total };
   }
 
   async findByUsername(username: string): Promise<DbUserRow | null> {

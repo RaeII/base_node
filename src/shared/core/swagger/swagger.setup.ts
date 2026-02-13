@@ -1,11 +1,13 @@
 import { Application } from "express";
 import swaggerUi from "swagger-ui-express";
 import { generateSwaggerSpec, SwaggerConfig } from "./swagger.generator";
+import { env } from "@/config";
 
 type ControllerClass = new (...args: any[]) => any;
 
 /**
  * Configura e monta o Swagger UI no Express.
+ * Não é montado em ambiente de produção.
  *
  * @param app          Instância do Express
  * @param prefix       Prefixo global das rotas (ex: "/api")
@@ -20,6 +22,7 @@ export function setupSwagger(
   config: SwaggerConfig,
   docsPath: string = "/api-docs"
 ): void {
+  if (env.isProduction) return;
   const spec = generateSwaggerSpec(prefix, controllers, config);
 
   // Endpoint para acessar o JSON da spec (registrado ANTES do Swagger UI)
